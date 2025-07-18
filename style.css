@@ -1,19 +1,21 @@
+/* style.css - NOUVELLE VERSION POUR LE DESIGN DES ONGLET */
+
 :root {
-    /* Couleurs principales */
-    --primary-color: #4A90E2; /* Bleu vibrant pour les éléments clés */
-    --secondary-color: #6D8CFF; /* Bleu complémentaire pour les bordures */
-    --accent-color: #D24343; /* Rouge pour les éléments d'accentuation (ex: PREMIUM) */
-    --text-color-dark: #2C3E50; /* Texte foncé pour la lisibilité */
-    --text-color-light: #7F8C8D; /* Texte gris clair pour les détails */
-    --bg-light: #F8F9FA; /* Fond très clair */
-    --bg-medium: #EFF2F5; /* Fond légèrement plus foncé pour les sections */
-    --card-bg: #FFFFFF; /* Fond des cartes et éléments blancs */
-    --border-color: #E0E6ED; /* Couleur des bordures générales */
-    --shadow-light: rgba(0, 0, 0, 0.08); /* Ombre légère */
-    --shadow-medium: rgba(0, 0, 0, 0.12); /* Ombre moyenne */
-    /* Couleurs Glassmorphism */
-    --glass-bg: rgba(255, 255, 255, 0.2); /* Fond semi-transparent */
-    --glass-border: rgba(255, 255, 255, 0.3); /* Bordure semi-transparente */
+    /* Couleurs principales (Palette révisée si nécessaire, sinon gardons l'actuelle) */
+    --primary-color: #007BFF; /* Bleu vibrant et vif */
+    --secondary-color: #6AA6D9; /* Bleu azur, peut être utilisé pour les bordures générales */
+    --accent-color: #FF5733; /* Corail vif et dynamique */
+    --text-color-dark: #2C3E50;
+    --text-color-light: #7F8C8D;
+    --bg-light: #F8F9FA;
+    --bg-medium: #EFF2F5;
+    --card-bg: #FFFFFF;
+    --border-color: #E0E6ED;
+    --shadow-light: rgba(0, 0, 0, 0.04); /* Ombre très légère pour un look plus plat */
+    --shadow-medium: rgba(0, 0, 0, 0.08); /* Ombre légère pour les éléments importants */
+    /* Couleurs Glassmorphism (Maintenant bleutées) */
+    --glass-bg: rgba(0, 123, 255, 0.15); /* Fond semi-transparent bleu */
+    --glass-border: rgba(0, 123, 255, 0.3); /* Bordure semi-transparente bleue */
 }
 
 body {
@@ -24,6 +26,9 @@ body {
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
@@ -32,6 +37,8 @@ header {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 2px 4px var(--shadow-light);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 header h1 {
@@ -49,77 +56,126 @@ header p {
     font-weight: 400;
 }
 
+/* --- AMÉLIORATIONS MAJEURES DU SYSTÈME D'ONGLETS --- */
 .tabs-container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 2em auto;
     background: var(--card-bg);
     border-radius: 12px;
     box-shadow: 0 6px 18px var(--shadow-medium);
-    padding: 0.5em;
+    padding: 0; /* Plus de padding ici, le padding sera dans les boutons */
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
+    width: calc(100% - 2em);
+    box-sizing: border-box;
 }
 
 .tabs-nav {
     display: flex;
     justify-content: flex-start;
-    align-items: center;
-    gap: 0.2em;
-    padding: 0 0.5em;
+    align-items: flex-end; /* Alignement vers le bas pour la ligne */
+    gap: 0.8em; /* Plus d'espace entre les onglets */
+    padding: 0 1em; /* Padding interne pour la barre de navigation */
+    border-bottom: 2px solid var(--border-color); /* Ligne de base constante */
+    position: relative;
+    height: 65px; /* Hauteur fixe pour la barre d'onglets */
 }
 
 .tabs-nav .jeu-btn {
     flex-shrink: 0;
-    padding: 0.4em 0.8em;
+    padding: 0.8em 1.5em; /* Plus de padding pour le confort */
     min-width: unset;
-    height: 50px;
-    background: transparent;
-    border: none;
-    border-radius: 8px 8px 0 0;
-    color: var(--text-color-dark);
-    box-shadow: none;
-    transition: all 0.2s ease;
+    height: 100%; /* S'adapte à la hauteur du parent */
+    background: transparent; /* Fond transparent pour les onglets non sélectionnés */
+    border: none; /* Pas de bordures de bouton par défaut */
+    border-radius: 10px 10px 0 0; /* Garde les coins supérieurs arrondis */
+    color: var(--text-color-light); /* Texte gris clair pour les onglets inactifs */
+    transition: all 0.3s ease;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9em;
+    align-items: center; /* CENTRAGE VERTICAL DU CONTENU */
+    justify-content: center; /* CENTRAGE HORIZONTAL DU CONTENU */
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative; /* Pour le pseudo-élément */
+    top: 0;
+    z-index: 0;
+
+    /* Nouveau : Underline Effect */
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px; /* Sous la ligne de tabs-nav */
+        left: 0;
+        width: 0%;
+        height: 3px; /* Épaisseur de la ligne d'activation */
+        background: var(--primary-color);
+        border-radius: 2px;
+        transition: width 0.3s ease-out, background-color 0.3s ease-out;
+    }
 }
 
 .tabs-nav .jeu-btn img {
-    width: 30px;
-    height: 30px;
-    margin-right: 0.6em;
-    border-radius: 6px;
-    background: var(--bg-medium);
+    width: 32px;
+    height: 32px;
+    margin-right: 0.8em;
+    border-radius: 8px;
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
     object-fit: contain;
-    padding: 2px;
+    padding: 3px;
+    transition: all 0.3s ease;
 }
 
 .tabs-nav .jeu-btn span {
-    font-weight: 500;
-    letter-spacing: 0.2px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
 .tabs-nav .jeu-btn:hover {
-    background: var(--bg-medium);
-    transform: none;
-    box-shadow: none;
+    color: var(--primary-color); /* Couleur du texte au survol */
+    background: var(--bg-medium); /* Léger fond au survol */
+    transform: translateY(-2px); /* Léger soulèvement */
+    box-shadow: 0 4px 10px var(--shadow-light); /* Ombre discrète au survol */
+    z-index: 1; /* Assure qu'il est au-dessus */
+}
+.tabs-nav .jeu-btn:hover img {
+    border-color: var(--primary-color);
+}
+.tabs-nav .jeu-btn:hover::after {
+    width: 60%; /* Ligne partielle au survol */
+    left: 20%; /* Centrer la ligne partielle */
+    transform: translateX(0); /* Ajustement pour left/width */
 }
 
+
 .tabs-nav .jeu-btn.selected {
-    background: var(--primary-color);
-    color: white;
-    font-weight: 600;
-    box-shadow: 0 -3px 8px rgba(74, 144, 226, 0.4);
-    border-bottom: 3px solid var(--primary-color);
-    border-radius: 8px 8px 0 0;
+    background: var(--card-bg); /* Fond blanc pour l'onglet sélectionné */
+    color: var(--primary-color); /* Texte et icône de couleur primaire */
+    font-weight: 700;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1); /* Ombre douce et élégante vers le haut */
+    border: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--card-bg); /* Masque la bordure de tabs-nav juste en dessous */
+    transform: translateY(-2px); /* Légèrement soulevé */
+    z-index: 2; /* Très visible */
+    border-radius: 10px 10px 0 0; /* Garde les coins supérieurs arrondis */
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%; /* La ligne d'activation s'étend sous l'onglet sélectionné */
+        height: 3px;
+        background: var(--primary-color);
+        border-radius: 2px;
+    }
 }
 
 .tabs-nav .jeu-btn.selected img {
-    filter: brightness(1.2) invert(0.8);
-    border-color: white;
+    border-color: var(--primary-color);
     background: transparent;
 }
 
@@ -130,6 +186,8 @@ header p {
 .tabs-container {
     scrollbar-width: none;
 }
+/* FIN AMÉLIORATIONS MAJEURES DU SYSTÈME D'ONGLETS */
+
 
 .banniere {
     display: flex;
@@ -139,10 +197,11 @@ header p {
     box-shadow: 0 4px 10px var(--shadow-light);
     padding: 1em 1.5em;
     margin: 1.5em auto 1.5em;
-    width: 90vw;
+    width: calc(100% - 2em);
     max-width: 450px;
     border-left: 5px solid var(--primary-color);
     transition: all 0.3s ease-out;
+    box-sizing: border-box;
 }
 
 .banniere img {
@@ -163,14 +222,17 @@ header p {
 }
 
 .astuces {
-    max-width: 900px;
+    max-width: 1200px;
     margin: auto;
     padding: 0 1.5em 2em 1.5em;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5em;
     position: relative;
     min-height: 250px;
+    flex-grow: 1;
+    width: calc(100% - 3em);
+    box-sizing: border-box;
 }
 
 .astuce {
@@ -221,7 +283,7 @@ header p {
 
 .premium-badge {
     color: var(--accent-color);
-    background: #ffecec;
+    background: #ffecec; /* Garde ce fond spécifique pour le badge premium */
     border-radius: 5px;
     padding: 3px 8px;
     margin-left: 0.6em;
@@ -270,6 +332,8 @@ header p {
     animation: fadeIn 0.8s ease-out;
     transition: all 0.3s ease-out;
     display: block;
+    width: calc(100% - 3em);
+    box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -295,11 +359,11 @@ header p {
     transition: background 0.2s ease, transform 0.2s ease;
     font-weight: 600;
     letter-spacing: 0.5px;
-    box-shadow: 0 3px 8px rgba(74, 144, 226, 0.3);
+    box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3); /* Utilise la nouvelle primary-color */
 }
 
 .premium-access-section button:hover {
-    background: #3a7bd5;
+    background: #0069d9; /* Une nuance plus foncée du nouveau primary-color */
     transform: translateY(-2px);
 }
 
@@ -337,7 +401,7 @@ header p {
 
 .premium-form input[type="password"]:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); /* Utilise la nouvelle primary-color */
 }
 
 .premium-message {
@@ -352,7 +416,7 @@ header p {
 }
 
 .premium-message.info {
-    color: #4A90E2;
+    color: var(--primary-color);
     background: #e6f0fa;
 }
 
@@ -383,6 +447,8 @@ header p {
     max-width: 500px;
     margin-left: auto;
     margin-right: auto;
+    width: calc(100% - 2em);
+    box-sizing: border-box;
 }
 
 /* --- Styles pour l'écran de chargement animé --- */
@@ -416,19 +482,17 @@ header p {
     position: relative;
     border-left-color: var(--accent-color);
     background-color: var(--bg-medium);
-    pointer-events: none; /* Disable clicks on the entire card */
+    pointer-events: none;
     filter: grayscale(80%);
     transition: filter 0.3s ease-out;
 }
 
-/* Allow clicks on locked astuces to open popup only */
 .astuce-premium.locked {
-    pointer-events: auto; /* Re-enable pointer events for the card */
-    cursor: pointer; /* Indicate it's still clickable */
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 
-/* Effet de flou sur le contenu de l'astuce verrouillée */
 .astuce-premium.locked .blur-content {
     filter: blur(4px);
     -webkit-filter: blur(4px);
@@ -436,7 +500,6 @@ header p {
     text-shadow: 0 0 6px rgba(0,0,0,0.4);
 }
 
-/* Overlay de verrouillage (Amélioré) */
 .astuce-premium .lock-overlay {
     position: absolute;
     top: 0;
@@ -500,19 +563,20 @@ header p {
 }
 
 .premium-popup-content {
-    background: var(--glass-bg);
+    background: var(--glass-bg); /* Nouveau fond glassmorphisme bleu */
     border-radius: 15px;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--glass-border); /* Nouvelle bordure glassmorphisme bleue */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: 2.5em;
     margin: 1em;
     max-width: 480px;
-    width: 90%;
-    box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.45);
+    width: calc(100% - 2em);
+    box-sizing: border-box;
+    box-shadow: 0 10px 40px 0 rgba(0, 123, 255, 0.25); /* Ombre bleutée */
     text-align: center;
     position: relative;
-    color: var(--text-color-dark);
+    color: white; /* Texte en blanc pour un meilleur contraste */
     transform: translateY(20px);
     opacity: 0;
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease-out;
@@ -524,7 +588,7 @@ header p {
 }
 
 .premium-popup-content h3 {
-    color: var(--primary-color);
+    color: var(--primary-color); /* Garde la couleur primaire pour les titres */
     margin-top: 0;
     font-size: 1.8em;
     margin-bottom: 1em;
@@ -538,17 +602,17 @@ header p {
 
 .premium-popup-content .close-popup-btn {
     position: absolute;
-    top: 18px;
-    right: 22px;
-    font-size: 2.2em;
+    top: 15px; /* Ajusté pour un meilleur positionnement */
+    right: 20px; /* Ajusté pour un meilleur positionnement */
+    font-size: 2.5em; /* Rendu plus grand */
     cursor: pointer;
-    color: var(--text-color-light);
+    color: white; /* Maintenant blanc */
     transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .premium-popup-content .close-popup-btn:hover {
-    color: var(--accent-color);
-    transform: rotate(90deg);
+    color: var(--accent-color); /* Couleur plus vive au survol */
+    transform: rotate(90deg) scale(1.1); /* Rotation et léger agrandissement */
 }
 
 .premium-popup-content .premium-price {
@@ -597,9 +661,9 @@ header p {
 
 .premium-popup-content .reliability-info {
     font-size: 1em;
-    color: var(--text-color-dark);
+    color: white; /* Maintenant blanc */
     font-weight: 500;
-    border-top: 1px dashed var(--border-color);
+    border-top: 1px dashed rgba(255, 255, 255, 0.4); /* Bordure blanche semi-transparente */
     padding-top: 1.2em;
     margin-top: 1.5em;
 }
@@ -628,20 +692,24 @@ header p {
 }
 
 .astuce-detail-modal-content {
-    background: var(--card-bg);
-    border-radius: 15px;
+    background: var(--glass-bg); /* Nouveau fond glassmorphisme bleu */
+    border-radius: 15px; /* Maintenu à 15px pour l'arrondi */
+    border: 1px solid var(--glass-border); /* Nouvelle bordure glassmorphisme bleue */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 2.5em;
     margin: 1em;
     max-width: 700px;
-    width: 90%;
-    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3);
+    width: calc(100% - 2em);
+    box-sizing: border-box;
+    box-shadow: 0 10px 40px 0 rgba(0, 123, 255, 0.25); /* Ombre bleutée */
     position: relative;
-    color: var(--text-color-dark);
+    color: white; /* Texte en blanc pour un meilleur contraste */
     transform: translateY(20px);
     opacity: 0;
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease-out;
-    max-height: 80vh; /* Limit height for scrollability */
-    overflow-y: auto; /* Enable scrolling for long content */
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .astuce-detail-modal-overlay.show .astuce-detail-modal-content {
@@ -650,7 +718,7 @@ header p {
 }
 
 .astuce-detail-modal-content h3 {
-    color: var(--primary-color);
+    color: var(--primary-color); /* Garde la couleur primaire pour les titres */
     margin-top: 0;
     font-size: 1.8em;
     margin-bottom: 0.8em;
@@ -664,22 +732,22 @@ header p {
 
 .astuce-detail-modal-content .close-modal-btn {
     position: absolute;
-    top: 18px;
-    right: 22px;
-    font-size: 2.2em;
+    top: 15px; /* Ajusté pour un meilleur positionnement */
+    right: 20px; /* Ajusté pour un meilleur positionnement */
+    font-size: 2.5em; /* Rendu plus grand */
     cursor: pointer;
-    color: var(--text-color-light);
+    color: white; /* Maintenant blanc */
     transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .astuce-detail-modal-content .close-modal-btn:hover {
-    color: var(--accent-color);
-    transform: rotate(90deg);
+    color: var(--accent-color); /* Couleur plus vive au survol */
+    transform: rotate(90deg) scale(1.1); /* Rotation et léger agrandissement */
 }
 
 .astuce-detail-modal-content #modal-astuce-date {
     font-size: 0.9em;
-    color: var(--text-color-light);
+    color: rgba(255, 255, 255, 0.7); /* Date plus claire */
     font-style: italic;
     margin-bottom: 1.5em;
 }
@@ -687,18 +755,25 @@ header p {
 .astuce-detail-modal-content #modal-astuce-contenu {
     margin-bottom: 1.5em;
     font-size: 1em;
+    white-space: pre-line; /* Assure que les sauts de ligne du contenu sont respectés */
     line-height: 1.8;
 }
 
 .astuce-detail-modal-content #modal-astuce-auteur {
     text-align: right;
     font-size: 0.9em;
-    color: var(--text-color-light);
+    color: rgba(255, 255, 255, 0.7); /* Auteur plus clair */
     font-style: italic;
 }
 
 
 /* --- Responsive Design --- */
+@media (max-width: 1200px) {
+    .tabs-container, .astuces, .banniere, .premium-access-section, .premium-status {
+        width: calc(100% - 2em);
+    }
+}
+
 @media (max-width: 768px) {
     header h1 {
         font-size: 1.8em;
@@ -706,27 +781,32 @@ header p {
     header p {
         font-size: 1em;
     }
-    .tabs-nav {
-        padding: 0.5em 1em;
-    }
     .tabs-container {
         border-radius: 0;
         margin: 1em 0;
         box-shadow: none;
         padding: 0.2em;
+        width: 100%;
+    }
+    .tabs-nav {
+        padding: 0 0.5em; /* Ajuster le padding pour mobile */
+        gap: 0.3em; /* Réduire l'espace entre les onglets sur mobile */
+        height: 55px; /* Ajuster la hauteur pour mobile */
     }
     .tabs-nav .jeu-btn {
-        padding: 0.3em 0.6em;
-        height: 45px;
-        font-size: 0.85em;
+        padding: 0.5em 0.8em; /* Réduire le padding sur mobile */
+        font-size: 0.9em;
     }
     .tabs-nav .jeu-btn img {
-        width: 25px;
-        height: 25px;
-        margin-right: 0.5em;
+        width: 28px;
+        height: 28px;
+        margin-right: 0.6em;
+    }
+    .tabs-nav .jeu-btn.selected {
+        transform: translateY(-1px); /* Moins de soulèvement sur mobile */
     }
     .banniere {
-        width: 95vw;
+        width: calc(100% - 2em);
         padding: 0.8em 1em;
         margin: 1em auto;
     }
@@ -740,6 +820,7 @@ header p {
     .astuces {
         padding: 0 1em 1.5em 1em;
         grid-template-columns: 1fr;
+        width: calc(100% - 2em);
     }
     .astuce {
         padding: 1em;
@@ -750,8 +831,8 @@ header p {
     }
     .premium-access-section {
         padding: 1em;
-        margin-left: 1em;
-        margin-right: 1em;
+        margin: 1em auto;
+        width: calc(100% - 2em);
     }
     .premium-prompt {
         font-size: 1em;
@@ -763,10 +844,10 @@ header p {
     .premium-form input[type="password"] {
         width: 90%;
     }
-    /* Pop-up sur mobile */
     .premium-popup-content {
         padding: 1.8em;
         margin: 0.8em;
+        width: calc(100% - 1.6em);
     }
     .premium-popup-content h3 {
         font-size: 1.6em;
@@ -781,10 +862,10 @@ header p {
     .premium-popup-content .reliability-info {
         font-size: 0.9em;
     }
-    /* Astuce Detail Modal on mobile */
     .astuce-detail-modal-content {
         padding: 1.8em;
         margin: 0.8em;
+        width: calc(100% - 1.6em);
     }
     .astuce-detail-modal-content h3 {
         font-size: 1.6em;
@@ -798,14 +879,14 @@ header p {
 
 @media (max-width: 480px) {
     .tabs-nav .jeu-btn {
-        padding: 0.2em 0.5em;
-        height: 40px;
-        font-size: 0.8em;
+        padding: 0.3em 0.6em;
+        height: 42px;
+        font-size: 0.85em;
     }
     .tabs-nav .jeu-btn img {
-        width: 20px;
-        height: 20px;
-        margin-right: 0.4em;
+        width: 24px;
+        height: 24px;
+        margin-right: 0.5em;
     }
     .astuce {
         padding: 0.9em;
