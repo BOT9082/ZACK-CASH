@@ -153,7 +153,7 @@ function showAstuceDetailModal(astuce) {
 
 // Function to hide the astuce detail modal
 function hideAstuceDetailModal() {
-    astuceDetailModalOverlay.classList.remove('show');
+    astuceDetailModalModalOverlay.classList.remove('show');
 }
 
 // Event listeners for the astuce detail modal
