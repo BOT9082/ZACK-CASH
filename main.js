@@ -16,6 +16,14 @@ const loadingSpinner = document.getElementById('loading-spinner');
 const premiumPopupOverlay = document.getElementById('premium-popup-overlay');
 const closePopupBtn = document.querySelector('.premium-popup-content .close-popup-btn'); // Sélecteur plus spécifique
 
+// Get the astuce detail modal elements
+const astuceDetailModalOverlay = document.getElementById('astuce-detail-modal');
+const closeModalBtn = document.querySelector('.astuce-detail-modal-content .close-modal-btn');
+const modalAstuceTitre = document.getElementById('modal-astuce-titre');
+const modalAstuceDate = document.getElementById('modal-astuce-date');
+const modalAstuceContenu = document.getElementById('modal-astuce-contenu');
+const modalAstuceAuteur = document.getElementById('modal-astuce-auteur');
+
 // Initialisation de l'animation Anime.js pour le spinner
 if (typeof anime !== 'undefined') {
     anime(['#loading-spinner feTurbulence', '#loading-spinner feDisplacementMap'], {
@@ -134,6 +142,28 @@ async function fetchAstuces(path, isPremium = false) {
     }
 }
 
+// Function to show the astuce detail modal
+function showAstuceDetailModal(astuce) {
+    modalAstuceTitre.textContent = astuce.titre;
+    modalAstuceDate.textContent = (new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    modalAstuceContenu.innerHTML = astuce.contenu.replace(/\n/g,'<br>');
+    modalAstuceAuteur.textContent = `Par ${astuce.auteur}`;
+    astuceDetailModalOverlay.classList.add('show');
+}
+
+// Function to hide the astuce detail modal
+function hideAstuceDetailModal() {
+    astuceDetailModalOverlay.classList.remove('show');
+}
+
+// Event listeners for the astuce detail modal
+closeModalBtn.onclick = hideAstuceDetailModal;
+astuceDetailModalOverlay.addEventListener('click', (event) => {
+    if (event.target === astuceDetailModalOverlay) {
+        hideAstuceDetailModal(); // Close if clicking outside the content
+    }
+});
+
 // Affichage des astuces dans la page
 function afficherAstuces(astuces) {
     const astucesDiv = document.getElementById("astuces");
@@ -144,10 +174,12 @@ function afficherAstuces(astuces) {
         return;
     }
     
-    const astucesHtml = astuces.map(astuce => {
+    astuces.forEach(astuce => {
+        const astuceElement = document.createElement('div');
+        astuceElement.className = `astuce ${astuce.premium ? 'astuce-premium' : ''} ${astuce.premium && !premiumKeyValidated ? 'locked' : ''}`;
+
         if (astuce.premium && !premiumKeyValidated) {
-            return `
-            <div class="astuce astuce-premium locked">
+            astuceElement.innerHTML = `
                 <div class="lock-overlay">
                     <img src="assets/icons/lock.svg" alt="Verrouillé" class="lock-icon">
                     <p>Astuce Premium</p>
@@ -157,19 +189,28 @@ function afficherAstuces(astuces) {
                 <div class="date">${(new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 <div class="contenu blur-content">${astuce.contenu.replace(/\n/g,'<br>')}</div>
                 <div class="auteur">Par ${astuce.auteur}</div>
-            </div>`;
+            `;
+            // If premium and locked, make it clickable to show the popup
+            astuceElement.addEventListener('click', (event) => {
+                if (!premiumKeyValidated) {
+                    showTelegramPopup();
+                }
+            });
         } else {
-            return `
-            <div class="astuce ${astuce.premium ? 'astuce-premium' : ''}">
+            astuceElement.innerHTML = `
                 <div class="titre">${astuce.titre} ${astuce.premium ? '<span class="premium-badge">PREMIUM</span>' : ''}</div>
                 <div class="date">${(new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 <div class="contenu">${astuce.contenu.replace(/\n/g,'<br>')}</div>
                 <div class="auteur">Par ${astuce.auteur}</div>
-            </div>`;
+            `;
+            // Make the entire astuce card clickable to show details
+            astuceElement.style.cursor = 'pointer'; // Indicate it's clickable
+            astuceElement.addEventListener('click', () => {
+                showAstuceDetailModal(astuce);
+            });
         }
-    }).join("");
-
-    astucesDiv.insertAdjacentHTML('beforeend', astucesHtml);
+        astucesDiv.appendChild(astuceElement);
+    });
 }
 
 // Fonction pour afficher l'option d'accès Premium
