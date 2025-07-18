@@ -416,10 +416,17 @@ header p {
     position: relative;
     border-left-color: var(--accent-color);
     background-color: var(--bg-medium);
-    pointer-events: none;
+    pointer-events: none; /* Disable clicks on the entire card */
     filter: grayscale(80%);
     transition: filter 0.3s ease-out;
 }
+
+/* Allow clicks on locked astuces to open popup only */
+.astuce-premium.locked {
+    pointer-events: auto; /* Re-enable pointer events for the card */
+    cursor: pointer; /* Indicate it's still clickable */
+}
+
 
 /* Effet de flou sur le contenu de l'astuce verrouillée */
 .astuce-premium.locked .blur-content {
@@ -598,6 +605,99 @@ header p {
 }
 
 
+/* --- Styles for the new Astuce Detail Modal --- */
+.astuce-detail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.astuce-detail-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.astuce-detail-modal-content {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 2.5em;
+    margin: 1em;
+    max-width: 700px;
+    width: 90%;
+    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3);
+    position: relative;
+    color: var(--text-color-dark);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease-out;
+    max-height: 80vh; /* Limit height for scrollability */
+    overflow-y: auto; /* Enable scrolling for long content */
+}
+
+.astuce-detail-modal-overlay.show .astuce-detail-modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.astuce-detail-modal-content h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    font-size: 1.8em;
+    margin-bottom: 0.8em;
+}
+
+.astuce-detail-modal-content p {
+    margin-bottom: 0.8em;
+    line-height: 1.6;
+    font-size: 1.05em;
+}
+
+.astuce-detail-modal-content .close-modal-btn {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    font-size: 2.2em;
+    cursor: pointer;
+    color: var(--text-color-light);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.astuce-detail-modal-content .close-modal-btn:hover {
+    color: var(--accent-color);
+    transform: rotate(90deg);
+}
+
+.astuce-detail-modal-content #modal-astuce-date {
+    font-size: 0.9em;
+    color: var(--text-color-light);
+    font-style: italic;
+    margin-bottom: 1.5em;
+}
+
+.astuce-detail-modal-content #modal-astuce-contenu {
+    margin-bottom: 1.5em;
+    font-size: 1em;
+    line-height: 1.8;
+}
+
+.astuce-detail-modal-content #modal-astuce-auteur {
+    text-align: right;
+    font-size: 0.9em;
+    color: var(--text-color-light);
+    font-style: italic;
+}
+
+
 /* --- Responsive Design --- */
 @media (max-width: 768px) {
     header h1 {
@@ -680,6 +780,19 @@ header p {
     }
     .premium-popup-content .reliability-info {
         font-size: 0.9em;
+    }
+    /* Astuce Detail Modal on mobile */
+    .astuce-detail-modal-content {
+        padding: 1.8em;
+        margin: 0.8em;
+    }
+    .astuce-detail-modal-content h3 {
+        font-size: 1.6em;
+    }
+    .astuce-detail-modal-content .close-modal-btn {
+        font-size: 2em;
+        top: 10px;
+        right: 15px;
     }
 }
 
