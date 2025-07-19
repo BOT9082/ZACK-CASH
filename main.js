@@ -107,7 +107,7 @@ async function chargerAstuces(jeu) {
             astucesDiv.insertAdjacentHTML('beforeend', `<div class="premium-status">🔓 Accès Premium activé pour ce jeu !</div>`);
         }
 
-    } catch (e) { // C'était ici que se trouvait l'erreur '= (e) =>'
+    } catch (e) {
         astucesDiv.insertAdjacentHTML('beforeend', "<div class='error-message'>⚠️ Impossible de charger les astuces pour ce jeu.</div>");
         console.error("Erreur lors du chargement des astuces:", e);
     } finally {
@@ -153,7 +153,7 @@ function showAstuceDetailModal(astuce) {
 
 // Function to hide the astuce detail modal
 function hideAstuceDetailModal() {
-    astuceDetailModalModalOverlay.classList.remove('show');
+    astuceDetailModalOverlay.classList.remove('show'); // CORRECTION APPLIQUÉE ICI
 }
 
 // Event listeners for the astuce detail modal
