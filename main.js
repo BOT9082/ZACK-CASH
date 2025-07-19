@@ -8,7 +8,7 @@ const JEUX = [
 
 const jeuxTabsNav = document.getElementById("jeux-tabs-nav");
 let currentJeuId = null;
-// MODIFICATION: Nous allons stocker la clé validée, pas juste un booléen.
+// Nous allons stocker la clé validée, pas juste un booléen.
 let validatedPremiumKey = localStorage.getItem('validatedPremiumKey'); 
 
 // Récupérer l'élément du spinner de chargement
@@ -84,8 +84,7 @@ async function chargerAstuces(jeu) {
     astucesDiv.querySelectorAll('.astuce, .no-tips-message, .premium-access-section, .premium-status').forEach(el => el.remove());
 
     try {
-        // MODIFICATION: Nous n'appelons plus checkStoredPremiumKey ici directement.
-        // Elle sera appelée par setInterval.
+        // La vérification de la clé est maintenant gérée par setInterval.
 
         const classicAstuces = await fetchAstuces(`data/${jeu.id}`);
         const premiumAstuces = await fetchAstuces(`premium-data/${jeu.id}`, true); // Passer `true` pour marquer comme premium
@@ -243,10 +242,10 @@ function afficherAstuces(astuces) {
     
     astuces.forEach(astuce => {
         const astuceElement = document.createElement('div');
-        // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+        // Condition de verrouillage basée sur validatedPremiumKey
         astuceElement.className = `astuce ${astuce.premium ? 'astuce-premium' : ''} ${astuce.premium && !validatedPremiumKey ? 'locked' : ''}`;
 
-        // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+        // Condition de verrouillage basée sur validatedPremiumKey
         if (astuce.premium && !validatedPremiumKey) {
             astuceElement.innerHTML = `
                 <div class="lock-overlay">
@@ -261,7 +260,7 @@ function afficherAstuces(astuces) {
             `;
             // If premium and locked, make it clickable to show the popup
             astuceElement.addEventListener('click', (event) => {
-                // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+                // Condition de verrouillage basée sur validatedPremiumKey
                 if (!validatedPremiumKey) {
                     showTelegramPopup();
                 }
@@ -344,7 +343,7 @@ async function validatePremiumKey(jeu) {
         const validKeys = await response.json();
 
         if (validKeys.includes(userKey)) {
-            // MODIFICATION: Stocker la clé elle-même
+            // Stocker la clé elle-même
             validatedPremiumKey = userKey;
             localStorage.setItem('validatedPremiumKey', userKey); // Stocke la clé
             messageDiv.className = 'premium-message success';
