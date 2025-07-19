@@ -2,14 +2,13 @@
 const JEUX = [
     { id: "aviator", nom: "Aviator", icon: "assets/icons/aviator.avif" },
     { id: "crash", nom: "Crash", icon: "assets/icons/crash.avif" },
-    { id: "dice", nom: "Dice", "icon": "assets/icons/dice.avif" },
+    { id: "dice", nom: "Dice", icon: "assets/icons/dice.avif" },
     { id: "luckyjet", nom: "Lucky Jet", icon: "assets/icons/luckyjet.avif" },
 ];
 
 const jeuxTabsNav = document.getElementById("jeux-tabs-nav");
 let currentJeuId = null;
-// Nous allons stocker la clé validée, pas juste un booléen.
-let validatedPremiumKey = localStorage.getItem('validatedPremiumKey'); 
+let premiumKeyValidated = localStorage.getItem('premiumKeyValidated') === 'true';
 
 // Récupérer l'élément du spinner de chargement
 const loadingSpinner = document.getElementById('loading-spinner');
@@ -24,349 +23,254 @@ const modalAstuceTitre = document.getElementById('modal-astuce-titre');
 const modalAstuceDate = document.getElementById('modal-astuce-date');
 const modalAstuceContenu = document.getElementById('modal-astuce-contenu');
 const modalAstuceAuteur = document.getElementById('modal-astuce-auteur');
+const modalAstuceFiabilite = document.getElementById('modal-astuce-fiabilite');
+const astucesContainer = document.getElementById('astuces');
 
-// Initialisation de l'animation Anime.js pour le spinner
-if (typeof anime !== 'undefined') {
-    anime(['#loading-spinner feTurbulence', '#loading-spinner feDisplacementMap'], {
-        baseFrequency: .05,
-        scale: 15,
-        alternate: true,
-        loop: true,
-        easing: 'linear',
-        duration: 2000
-    });
-
-    anime('#loading-spinner polygon', {
-        points: [
-            { value: '64 128 8.574 96 8.574 32 64 0 119.426 32 119.426 96' },
-            { value: '64 68.64 8.574 100 63.446 67.68 64 4 64.554 67.68 119.426 100' }
-        ],
-        alternate: true,
-        loop: true,
-        easing: 'easeInOutQuad',
-        duration: 1500
-    });
-} else {
-    console.error("Anime.js n'est pas chargé. L'animation ne peut pas démarrer.");
-}
-
-// Logique pour les boutons d'onglets
-JEUX.forEach(jeu => {
-    const btn = document.createElement("button");
-    btn.className = "jeu-btn";
-    btn.innerHTML = `<img src="${jeu.icon}" alt="${jeu.nom}"> <span>${jeu.nom.toUpperCase()}</span>`;
-    btn.onclick = () => {
-        document.querySelectorAll('.jeu-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        currentJeuId = jeu.id;
-        chargerAstuces(jeu);
-    };
-    jeuxTabsNav.appendChild(btn);
-});
-
-// Affichage de la bannière jeu sélectionné
-function showBanniere(jeu) {
-    document.getElementById("banniere").innerHTML =
-        `<div class="banniere">
-            <img src="${jeu.icon}" alt="${jeu.nom}">
-            <div>${jeu.nom.toUpperCase()}</div>
-        </div>`;
-}
-
-// Fonction pour charger les astuces (standard et premium)
-async function chargerAstuces(jeu) {
-    showBanniere(jeu);
-    const astucesDiv = document.getElementById("astuces");
-    
-    // Afficher le spinner au début du chargement
+// Fonction pour afficher le spinner
+function showSpinner() {
     loadingSpinner.classList.add('show');
-    // Effacer le contenu existant avant de charger, sauf le spinner
-    astucesDiv.querySelectorAll('.astuce, .no-tips-message, .premium-access-section, .premium-status').forEach(el => el.remove());
-
-    try {
-        // La vérification de la clé est maintenant gérée par setInterval.
-
-        const classicAstuces = await fetchAstuces(`data/${jeu.id}`);
-        const premiumAstuces = await fetchAstuces(`premium-data/${jeu.id}`, true); // Passer `true` pour marquer comme premium
-
-        let allAstuces = classicAstuces.concat(premiumAstuces);
-        
-        // Tri par date décroissante pour toutes les astuces
-        const astucesOrdonnees = allAstuces.filter(Boolean).sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return dateB - dateA; // Tri par date décroissante
-        });
-
-        // Retarder l'affichage des astuces pour que le spinner soit visible un minimum
-        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5 seconde de délai
-
-        afficherAstuces(astucesOrdonnees);
-
-        // Afficher l'option Premium si ce n'est pas déjà validé
-        // La variable `validatedPremiumKey` sera à jour grâce à l'intervalle de vérification.
-        if (!validatedPremiumKey) { 
-            showPremiumAccessOption(jeu);
-        } else {
-            astucesDiv.insertAdjacentHTML('beforeend', `<div class="premium-status">🔓 Accès Premium activé pour ce jeu !</div>`);
-        }
-
-    } catch (e) {
-        astucesDiv.insertAdjacentHTML('beforeend', "<div class='error-message'>⚠️ Impossible de charger les astuces pour ce jeu.</div>");
-        console.error("Erreur lors du chargement des astuces:", e);
-    } finally {
-        // Masquer le spinner à la fin, qu'il y ait eu succès ou erreur
-        loadingSpinner.classList.remove('show');
-    }
 }
 
-// Fonction pour vérifier la clé Premium stockée localement
-// Elle met à jour la variable `validatedPremiumKey` et le `localStorage`
-async function checkStoredPremiumKey() {
-    // Si aucune clé n'est stockée, il n'y a rien à vérifier activement.
-    // On laisse `validatedPremiumKey` à null.
-    if (!validatedPremiumKey) {
-        return; 
-    }
+// Fonction pour masquer le spinner
+function hideSpinner() {
+    loadingSpinner.classList.remove('show');
+}
+
+// Fonction pour charger les astuces
+async function chargerAstuces(jeu) {
+    showSpinner();
+    currentJeuId = jeu.id; // Met à jour le jeu actuel
 
     try {
-        const response = await fetch('premium-keys/keys.json');
+        const response = await fetch(`data/${jeu.id}.json`);
         if (!response.ok) {
-            console.error('Impossible de charger le fichier de clés Premium pour la vérification périodique.');
-            // Si le fichier des clés n'est pas disponible, nous ne pouvons pas valider.
-            // Par sécurité, nous révoquons l'accès.
-            if (validatedPremiumKey) { // Si une clé était validée
-                console.warn('Accès Premium révoqué: Impossible de vérifier la clé avec le serveur.');
-                localStorage.removeItem('validatedPremiumKey');
-                validatedPremiumKey = null; // Réinitialise la variable globale
-                alert("Votre accès Premium a été temporairement révoqué. Impossible de vérifier votre clé avec le serveur.");
-                // Forcer un rechargement des astuces pour mettre à jour l'affichage
-                if (currentJeuId) {
-                    const currentJeu = JEUX.find(j => j.id === currentJeuId);
-                    if (currentJeu) chargerAstuces(currentJeu);
-                }
-            }
-            return;
+            throw new Error(`Erreur de chargement des astuces pour ${jeu.nom}: ${response.statusText}`);
         }
-        const validKeys = await response.json();
+        const astuces = await response.json();
 
-        // Si la clé stockée n'est plus dans la liste des clés valides
-        if (!validKeys.includes(validatedPremiumKey)) {
-            if (validatedPremiumKey) { // Si une clé était validée
-                console.warn('La clé Premium stockée localement n\'est plus valide. Accès révoqué.');
-                localStorage.removeItem('validatedPremiumKey');
-                validatedPremiumKey = null; // Réinitialise la variable globale
-                alert("Votre accès Premium a été révoqué car votre clé n'est plus valide. Veuillez nous contacter pour renouveler.");
-                // Forcer un rechargement des astuces pour mettre à jour l'affichage
-                if (currentJeuId) {
-                    const currentJeu = JEUX.find(j => j.id === currentJeuId);
-                    if (currentJeu) chargerAstuces(currentJeu);
-                }
-            }
+        astucesContainer.innerHTML = ''; // Vide le contenu précédent
+
+        const astucesSection = document.getElementById('astuces');
+        const premiumAccessSection = document.querySelector('.premium-access-section');
+
+        // Gérer la visibilité des astuces Standard et de l'accès Premium
+        if (!premiumKeyValidated) {
+            // Afficher uniquement les astuces Standard
+            const standardAstuces = astuces.filter(astuce => astuce.type === 'standard');
+            standardAstuces.forEach(astuce => {
+                const astuceCard = createAstuceCard(astuce, jeu.id);
+                astucesContainer.appendChild(astuceCard);
+            });
+            premiumAccessSection.style.display = 'block'; // Assure que la section Premium est visible pour la validation
+            astucesSection.classList.remove('premium-unlocked');
+        } else {
+            // Afficher toutes les astuces (Standard et Premium)
+            astuces.forEach(astuce => {
+                const astuceCard = createAstuceCard(astuce, jeu.id);
+                astucesContainer.appendChild(astuceCard);
+            });
+            premiumAccessSection.style.display = 'none'; // Cache la section de saisie de clé si validée
+            astucesSection.classList.add('premium-unlocked');
         }
-        // Si elle est toujours valide, validatedPremiumKey conserve sa valeur
-        // et aucune action n'est nécessaire.
+
     } catch (error) {
-        console.error('Erreur lors de la vérification de la clé Premium stockée:', error);
-        // En cas d'erreur de réseau ou autre lors du fetch, par sécurité, invalider la clé
-        if (validatedPremiumKey) { // Si une clé était validée
-            localStorage.removeItem('validatedPremiumKey');
-            validatedPremiumKey = null;
-            alert("Une erreur est survenue lors de la vérification de votre clé Premium. Votre accès a été révoqué.");
-            if (currentJeuId) {
-                const currentJeu = JEUX.find(j => j.id === currentJeuId);
-                if (currentJeu) chargerAstuces(currentJeu);
-            }
-        }
+        console.error("Erreur lors du chargement des astuces:", error);
+        astucesContainer.innerHTML = `<p class="error-message">Impossible de charger les astuces pour ${jeu.nom}. Veuillez réessayer plus tard.</p>`;
+        const premiumAccessSection = document.querySelector('.premium-access-section');
+        premiumAccessSection.style.display = 'block'; // S'assurer que la section premium est visible en cas d'erreur de chargement
+    } finally {
+        hideSpinner();
     }
 }
 
+// Fonction pour créer une carte d'astuce
+function createAstuceCard(astuce, jeuId) {
+    const card = document.createElement('div');
+    card.className = `astuce-card ${astuce.type}`; // Ajoute la classe 'standard' ou 'premium'
+    card.dataset.id = astuce.id;
+    card.dataset.jeuId = jeuId;
 
-// Fonction utilitaire pour récupérer les astuces d'un chemin donné
-async function fetchAstuces(path, isPremium = false) {
-    try {
-        const indexUrl = `${path}/index.json`;
-        const indexResp = await fetch(indexUrl);
-        if (!indexResp.ok) {
-            console.warn(`Index non trouvé pour ${path}`);
-            return []; // Retourne un tableau vide si l'index n'est pas trouvé
-        }
-        const fichiers = await indexResp.json();
-        const astuces = await Promise.all(fichiers.map(async file => {
-            const astuceResp = await fetch(`${path}/${file}`);
-            if (!astuceResp.ok) return null;
-            const astuce = await astuceResp.json();
-            if (isPremium) {
-                astuce.premium = true; // Marquer l'astuce comme premium
-            }
-            return astuce;
-        }));
-        return astuces.filter(Boolean); // Filtrer les nulls
-    } catch (e) {
-        console.error(`Erreur lors du fetch des astuces depuis ${path}:`, e);
-        return []; // Retourne un tableau vide en cas d'erreur
+    let fiabiliteText = '';
+    let premiumIcon = '';
+
+    if (astuce.type === 'premium') {
+        fiabiliteText = 'Fiabilité : 97%';
+        premiumIcon = '<img src="assets/icons/premium-icon.png" alt="Premium" class="premium-icon">';
+        card.classList.add('premium-locked'); // Ajoute une classe pour le style cadenas
+    } else {
+        fiabiliteText = 'Fiabilité : 85%';
     }
+
+    card.innerHTML = `
+        <div class="card-header">
+            <h3>${astuce.titre}</h3>
+            ${premiumIcon}
+        </div>
+        <p class="card-date">Date : ${astuce.date}</p>
+        <p class="card-fiabilite">${fiabiliteText}</p>
+        <p class="card-apercu">${astuce.contenu.substring(0, 100)}...</p>
+        <button class="read-more-btn">Lire la suite</button>
+    `;
+
+    // Gestion du clic pour ouvrir la modale de détail
+    card.querySelector('.read-more-btn').addEventListener('click', () => {
+        if (astuce.type === 'premium' && !premiumKeyValidated) {
+            showTelegramPopup();
+        } else {
+            showAstuceDetail(astuce);
+        }
+    });
+
+    return card;
 }
 
-// Function to show the astuce detail modal
-function showAstuceDetailModal(astuce) {
+
+// Fonction pour afficher le détail de l'astuce dans la modale
+function showAstuceDetail(astuce) {
     modalAstuceTitre.textContent = astuce.titre;
-    modalAstuceDate.textContent = (new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    modalAstuceContenu.innerHTML = astuce.contenu.replace(/\n/g,'<br>');
-    modalAstuceAuteur.textContent = `Par ${astuce.auteur}`;
+    modalAstuceDate.textContent = `Date : ${astuce.date}`;
+    modalAstuceContenu.innerHTML = astuce.contenu; // Utilise innerHTML pour les retours à la ligne
+    modalAstuceAuteur.textContent = `Auteur : ${astuce.auteur}`;
+    modalAstuceFiabilite.textContent = `Fiabilité : ${astuce.type === 'premium' ? '97%' : '85%'}`;
     astuceDetailModalOverlay.classList.add('show');
 }
 
-// Function to hide the astuce detail modal
-function hideAstuceDetailModal() {
+// Écouteurs d'événements pour la modale de détail
+closeModalBtn.onclick = () => {
     astuceDetailModalOverlay.classList.remove('show');
-}
+};
 
-// Event listeners for the astuce detail modal
-closeModalBtn.onclick = hideAstuceDetailModal;
 astuceDetailModalOverlay.addEventListener('click', (event) => {
     if (event.target === astuceDetailModalOverlay) {
-        hideAstuceDetailModal(); // Close if clicking outside the content
+        astuceDetailModalOverlay.classList.remove('show');
     }
 });
 
-// Affichage des astuces dans la page
-function afficherAstuces(astuces) {
-    const astucesDiv = document.getElementById("astuces");
-    astucesDiv.querySelectorAll('.astuce, .no-tips-message, .premium-status').forEach(el => el.remove());
 
-    if (!astuces.length) {
-        astucesDiv.insertAdjacentHTML('beforeend', "<div class='no-tips-message'>Pas encore d'astuces pour ce jeu. Revenez bientôt ! 😊</div>");
-        return;
-    }
-    
-    astuces.forEach(astuce => {
-        const astuceElement = document.createElement('div');
-        // Condition de verrouillage basée sur validatedPremiumKey
-        astuceElement.className = `astuce ${astuce.premium ? 'astuce-premium' : ''} ${astuce.premium && !validatedPremiumKey ? 'locked' : ''}`;
-
-        // Condition de verrouillage basée sur validatedPremiumKey
-        if (astuce.premium && !validatedPremiumKey) {
-            astuceElement.innerHTML = `
-                <div class="lock-overlay">
-                    <img src="assets/icons/lock.svg" alt="Verrouillé" class="lock-icon">
-                    <p>Astuce Premium</p>
-                    <p>Débloquez l'accès pour voir !</p>
-                </div>
-                <div class="titre">${astuce.titre} <span class="premium-badge">PREMIUM</span></div>
-                <div class="date">${(new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-                <div class="contenu blur-content">${astuce.contenu.replace(/\n/g,'<br>')}</div>
-                <div class="auteur">Par ${astuce.auteur}</div>
-            `;
-            // If premium and locked, make it clickable to show the popup
-            astuceElement.addEventListener('click', (event) => {
-                // Condition de verrouillage basée sur validatedPremiumKey
-                if (!validatedPremiumKey) {
-                    showTelegramPopup();
-                }
-            });
-        } else {
-            astuceElement.innerHTML = `
-                <div class="titre">${astuce.titre} ${astuce.premium ? '<span class="premium-badge">PREMIUM</span>' : ''}</div>
-                <div class="date">${(new Date(astuce.date)).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-                <div class="contenu">${astuce.contenu.replace(/\n/g,'<br>')}</div>
-                <div class="auteur">Par ${astuce.auteur}</div>
-            `;
-            // Make the entire astuce card clickable to show details
-            astuceElement.style.cursor = 'pointer'; // Indicate it's clickable
-            astuceElement.addEventListener('click', () => {
-                showAstuceDetailModal(astuce);
-            });
-        }
-        astucesDiv.appendChild(astuceElement);
+// Générer les onglets des jeux
+JEUX.forEach(jeu => {
+    const button = document.createElement('button');
+    button.className = 'jeu-btn';
+    button.dataset.id = jeu.id;
+    button.innerHTML = `<img src="${jeu.icon}" alt="${jeu.nom}"> ${jeu.nom}`;
+    button.addEventListener('click', () => {
+        // Supprime la classe 'active' de tous les boutons
+        document.querySelectorAll('.jeu-btn').forEach(btn => btn.classList.remove('active'));
+        // Ajoute la classe 'active' au bouton cliqué
+        button.classList.add('active');
+        chargerAstuces(jeu);
     });
-}
+    jeuxTabsNav.appendChild(button);
+});
 
-// Fonction pour afficher l'option d'accès Premium
-function showPremiumAccessOption(jeu) {
-    const astucesDiv = document.getElementById("astuces");
-    const existingPremiumSection = document.querySelector('.premium-access-section');
+// Gestion de la section d'accès Premium
+const premiumAccessSection = document.querySelector('.premium-access-section');
+const premiumForm = document.getElementById('premium-form');
+const keyInput = document.getElementById('premium-key-input');
+const messageDiv = document.getElementById('premium-message');
+const unlockPremiumButton = document.getElementById('unlock-premium-btn');
 
-    if (existingPremiumSection) {
-        // S'il existe, s'assurer qu'il est visible et non affiché par `display: none`
-        existingPremiumSection.style.display = 'block'; // Ou 'flex' selon son CSS initial
-        return;
+// Vérifie si la clé Premium est déjà validée au chargement
+function checkStoredPremiumKey() {
+    const storedKey = localStorage.getItem('premiumKey');
+    if (storedKey) {
+        validatePremiumKey(storedKey, true); // Tente de valider la clé stockée silencieusement
     }
-
-    const premiumSection = document.createElement('div');
-    premiumSection.className = 'premium-access-section';
-    premiumSection.innerHTML = `
-        <div class="premium-prompt">
-            🔒 Débloquez plus d'astuces pour ${jeu.nom.toUpperCase()} !
-            <button id="showPremiumFormBtn">Voir plus d'astuces (Premium)</button>
-        </div>
-        <div id="premiumForm" class="premium-form"> <input type="password" id="premiumKeyInput" placeholder="Entrez votre clé Premium">
-            <button id="validatePremiumKeyBtn">Valider la clé</button>
-            <div id="premiumMessage" class="premium-message"></div>
-        </div>
-    `;
-    astucesDiv.appendChild(premiumSection);
-
-    // Initialement, le formulaire est masqué par CSS et s'affiche avec une classe
-    const premiumForm = document.getElementById('premiumForm');
-    premiumForm.classList.add('hidden-form'); // Ajout d'une classe pour masquer le formulaire initialement
-
-    document.getElementById('showPremiumFormBtn').onclick = () => {
-        premiumForm.classList.remove('hidden-form'); // Enlève la classe pour montrer le formulaire
-        document.getElementById('showPremiumFormBtn').style.display = 'none'; // Cache le bouton
-        document.getElementById('premiumKeyInput').focus();
-    };
-
-    document.getElementById('validatePremiumKeyBtn').onclick = () => validatePremiumKey(jeu);
 }
 
-// Fonction pour valider la clé Premium
-async function validatePremiumKey(jeu) {
-    const keyInput = document.getElementById('premiumKeyInput');
-    const messageDiv = document.getElementById('premiumMessage');
-    const userKey = keyInput.value.trim();
+// Écouteur pour le bouton "Débloquer l'accès Premium"
+unlockPremiumButton.addEventListener('click', () => {
+    premiumAccessSection.classList.add('expanded');
+    unlockPremiumButton.style.display = 'none'; // Cache le bouton une fois la section étendue
+});
 
-    if (!userKey) {
+// Écouteur pour la soumission du formulaire Premium
+premiumForm.addEventListener('submit', (event) => {
+    event.preventDefault(); // Empêche le rechargement de la page
+    const enteredKey = keyInput.value.trim();
+    if (enteredKey) {
+        validatePremiumKey(enteredKey);
+    } else {
         messageDiv.className = 'premium-message error';
         messageDiv.textContent = 'Veuillez entrer une clé.';
-        return;
     }
+});
 
-    messageDiv.className = 'premium-message info';
-    messageDiv.textContent = 'Vérification de la clé...';
+// Fonction de validation de la clé Premium
+async function validatePremiumKey(key, isStoredCheck = false) {
+    messageDiv.textContent = ''; // Réinitialise le message
+    messageDiv.className = 'premium-message'; // Réinitialise la classe
 
     try {
         const response = await fetch('premium-keys/keys.json');
         if (!response.ok) {
-            throw new Error('Fichier de clés Premium introuvable. Vérifiez le chemin et les permissions.');
+            throw new Error(`Impossible de charger les clés Premium: ${response.statusText}`);
         }
-        const validKeys = await response.json();
+        // MODIFICATION ICI POUR LIRE LE NOUVEAU FORMAT JSON
+        const keyObjects = await response.json(); 
+        const validKeys = keyObjects.map(obj => obj.key); // Extrait seulement les valeurs des clés
 
-        if (validKeys.includes(userKey)) {
-            // Stocker la clé elle-même
-            validatedPremiumKey = userKey;
-            localStorage.setItem('validatedPremiumKey', userKey); // Stocke la clé
+        if (validKeys.includes(key)) {
+            premiumKeyValidated = true;
+            localStorage.setItem('premiumKeyValidated', 'true');
+            localStorage.setItem('premiumKey', key); // Stocke la clé validée
             messageDiv.className = 'premium-message success';
-            messageDiv.textContent = 'Clé Premium validée ! Rechargement des astuces...';
+            messageDiv.textContent = 'Clé Premium validée ! Accès débloqué.';
             
-            // Cacher le formulaire et la section premium
-            const premiumForm = document.getElementById('premiumForm');
-            const premiumAccessSection = document.querySelector('.premium-access-section');
-            if (premiumForm) premiumForm.classList.add('hidden-form'); // Cache le formulaire
-            if (premiumAccessSection) premiumAccessSection.style.display = 'none'; // Cache toute la section
+            // Masquer la section premium et recharger les astuces
+            const astucesSection = document.getElementById('astuces');
+            premiumAccessSection.style.display = 'none';
+            astucesSection.classList.add('premium-unlocked'); // Ajoute la classe pour le style CSS
+            
+            // Masquer la pop-up Telegram si elle est ouverte
+            hideTelegramPopup(); 
 
-            setTimeout(() => chargerAstuces(jeu), 1000);
+            // Recharger les astuces pour le jeu actuel si une clé est validée
+            // On utilise currentJeuId pour s'assurer qu'un jeu est sélectionné
+            const selectedJeu = JEUX.find(jeu => jeu.id === currentJeuId);
+            if (selectedJeu) {
+                 // Cache le spinner avant le setTimeout pour éviter un flash
+                loadingSpinner.style.display = 'none'; // Temporairement cacher
+                setTimeout(() => {
+                    loadingSpinner.style.display = ''; // Rétablir après le chargement
+                    chargerAstuces(selectedJeu);
+                }, 1000); // Délai pour permettre la transition visuelle
+            } else {
+                // Si aucun jeu n'est sélectionné, charger le premier par défaut
+                if (JEUX.length > 0) {
+                    const firstButton = jeuxTabsNav.querySelector('.jeu-btn');
+                    if (firstButton) {
+                        firstButton.click(); // Simule un clic sur le premier bouton
+                    }
+                }
+            }
         } else {
+            premiumKeyValidated = false;
+            localStorage.removeItem('premiumKeyValidated'); // Supprime l'état si la clé n'est plus valide
+            localStorage.removeItem('premiumKey'); // Supprime la clé stockée
             messageDiv.className = 'premium-message error';
             messageDiv.textContent = 'Clé invalide.';
-            keyInput.value = '';
-            showTelegramPopup(); // Afficher la pop-up en cas de clé invalide
+            keyInput.value = ''; // Efface la clé incorrecte
+            // Si la validation échoue, s'assurer que la section premium est visible
+            premiumAccessSection.style.display = 'block'; 
+            const astucesSection = document.getElementById('astuces');
+            astucesSection.classList.remove('premium-unlocked'); // Retire la classe de débloquage
+
+            if (!isStoredCheck) { // N'affiche la pop-up que si ce n'est pas une vérification au démarrage
+                showTelegramPopup();
+            }
         }
     } catch (error) {
         messageDiv.className = 'premium-message error';
         messageDiv.textContent = 'Erreur lors de la vérification : ' + error.message;
         console.error('Erreur de validation clé Premium:', error);
-        showTelegramPopup(); // Afficher la pop-up aussi en cas d'erreur
+        premiumAccessSection.style.display = 'block'; // S'assurer que la section premium est visible en cas d'erreur
+        const astucesSection = document.getElementById('astuces');
+        astucesSection.classList.remove('premium-unlocked'); // Retire la classe de débloquage
+
+        if (!isStoredCheck) { // N'affiche la pop-up que si ce n'est pas une vérification au démarrage
+            showTelegramPopup();
+        }
     }
 }
 
@@ -396,6 +300,5 @@ document.addEventListener('DOMContentLoaded', () => {
             firstButton.click();
         }
     }
-    // Démarrer la vérification de la clé toutes les 1.5 secondes (1500 ms)
-    setInterval(checkStoredPremiumKey, 1500); 
+    checkStoredPremiumKey(); // Vérifie la clé stockée après le chargement du DOM
 });
