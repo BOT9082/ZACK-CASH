@@ -2,13 +2,14 @@
 const JEUX = [
     { id: "aviator", nom: "Aviator", icon: "assets/icons/aviator.avif" },
     { id: "crash", nom: "Crash", icon: "assets/icons/crash.avif" },
-    { id: "dice", nom: "Dice", icon: "assets/icons/dice.avif" },
+    { id: "dice", nom: "Dice", "icon": "assets/icons/dice.avif" },
     { id: "luckyjet", nom: "Lucky Jet", icon: "assets/icons/luckyjet.avif" },
 ];
 
 const jeuxTabsNav = document.getElementById("jeux-tabs-nav");
 let currentJeuId = null;
-let premiumKeyValidated = localStorage.getItem('premiumKeyValidated') === 'true';
+// MODIFICATION: Nous allons stocker la clé validée, pas juste un booléen.
+let validatedPremiumKey = localStorage.getItem('validatedPremiumKey'); 
 
 // Récupérer l'élément du spinner de chargement
 const loadingSpinner = document.getElementById('loading-spinner');
@@ -83,6 +84,9 @@ async function chargerAstuces(jeu) {
     astucesDiv.querySelectorAll('.astuce, .no-tips-message, .premium-access-section, .premium-status').forEach(el => el.remove());
 
     try {
+        // MODIFICATION: Nous n'appelons plus checkStoredPremiumKey ici directement.
+        // Elle sera appelée par setInterval.
+
         const classicAstuces = await fetchAstuces(`data/${jeu.id}`);
         const premiumAstuces = await fetchAstuces(`premium-data/${jeu.id}`, true); // Passer `true` pour marquer comme premium
 
@@ -101,7 +105,8 @@ async function chargerAstuces(jeu) {
         afficherAstuces(astucesOrdonnees);
 
         // Afficher l'option Premium si ce n'est pas déjà validé
-        if (!premiumKeyValidated) {
+        // La variable `validatedPremiumKey` sera à jour grâce à l'intervalle de vérification.
+        if (!validatedPremiumKey) { 
             showPremiumAccessOption(jeu);
         } else {
             astucesDiv.insertAdjacentHTML('beforeend', `<div class="premium-status">🔓 Accès Premium activé pour ce jeu !</div>`);
@@ -115,6 +120,68 @@ async function chargerAstuces(jeu) {
         loadingSpinner.classList.remove('show');
     }
 }
+
+// Fonction pour vérifier la clé Premium stockée localement
+// Elle met à jour la variable `validatedPremiumKey` et le `localStorage`
+async function checkStoredPremiumKey() {
+    // Si aucune clé n'est stockée, il n'y a rien à vérifier activement.
+    // On laisse `validatedPremiumKey` à null.
+    if (!validatedPremiumKey) {
+        return; 
+    }
+
+    try {
+        const response = await fetch('premium-keys/keys.json');
+        if (!response.ok) {
+            console.error('Impossible de charger le fichier de clés Premium pour la vérification périodique.');
+            // Si le fichier des clés n'est pas disponible, nous ne pouvons pas valider.
+            // Par sécurité, nous révoquons l'accès.
+            if (validatedPremiumKey) { // Si une clé était validée
+                console.warn('Accès Premium révoqué: Impossible de vérifier la clé avec le serveur.');
+                localStorage.removeItem('validatedPremiumKey');
+                validatedPremiumKey = null; // Réinitialise la variable globale
+                alert("Votre accès Premium a été temporairement révoqué. Impossible de vérifier votre clé avec le serveur.");
+                // Forcer un rechargement des astuces pour mettre à jour l'affichage
+                if (currentJeuId) {
+                    const currentJeu = JEUX.find(j => j.id === currentJeuId);
+                    if (currentJeu) chargerAstuces(currentJeu);
+                }
+            }
+            return;
+        }
+        const validKeys = await response.json();
+
+        // Si la clé stockée n'est plus dans la liste des clés valides
+        if (!validKeys.includes(validatedPremiumKey)) {
+            if (validatedPremiumKey) { // Si une clé était validée
+                console.warn('La clé Premium stockée localement n\'est plus valide. Accès révoqué.');
+                localStorage.removeItem('validatedPremiumKey');
+                validatedPremiumKey = null; // Réinitialise la variable globale
+                alert("Votre accès Premium a été révoqué car votre clé n'est plus valide. Veuillez nous contacter pour renouveler.");
+                // Forcer un rechargement des astuces pour mettre à jour l'affichage
+                if (currentJeuId) {
+                    const currentJeu = JEUX.find(j => j.id === currentJeuId);
+                    if (currentJeu) chargerAstuces(currentJeu);
+                }
+            }
+        }
+        // Si elle est toujours valide, validatedPremiumKey conserve sa valeur
+        // et aucune action n'est nécessaire.
+    } catch (error) {
+        console.error('Erreur lors de la vérification de la clé Premium stockée:', error);
+        // En cas d'erreur de réseau ou autre lors du fetch, par sécurité, invalider la clé
+        if (validatedPremiumKey) { // Si une clé était validée
+            localStorage.removeItem('validatedPremiumKey');
+            validatedPremiumKey = null;
+            alert("Une erreur est survenue lors de la vérification de votre clé Premium. Votre accès a été révoqué.");
+            if (currentJeuId) {
+                const currentJeu = JEUX.find(j => j.id === currentJeuId);
+                if (currentJeu) chargerAstuces(currentJeu);
+            }
+        }
+    }
+}
+
 
 // Fonction utilitaire pour récupérer les astuces d'un chemin donné
 async function fetchAstuces(path, isPremium = false) {
@@ -153,7 +220,7 @@ function showAstuceDetailModal(astuce) {
 
 // Function to hide the astuce detail modal
 function hideAstuceDetailModal() {
-    astuceDetailModalOverlay.classList.remove('show'); // CORRECTION APPLIQUÉE ICI
+    astuceDetailModalOverlay.classList.remove('show');
 }
 
 // Event listeners for the astuce detail modal
@@ -176,9 +243,11 @@ function afficherAstuces(astuces) {
     
     astuces.forEach(astuce => {
         const astuceElement = document.createElement('div');
-        astuceElement.className = `astuce ${astuce.premium ? 'astuce-premium' : ''} ${astuce.premium && !premiumKeyValidated ? 'locked' : ''}`;
+        // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+        astuceElement.className = `astuce ${astuce.premium ? 'astuce-premium' : ''} ${astuce.premium && !validatedPremiumKey ? 'locked' : ''}`;
 
-        if (astuce.premium && !premiumKeyValidated) {
+        // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+        if (astuce.premium && !validatedPremiumKey) {
             astuceElement.innerHTML = `
                 <div class="lock-overlay">
                     <img src="assets/icons/lock.svg" alt="Verrouillé" class="lock-icon">
@@ -192,7 +261,8 @@ function afficherAstuces(astuces) {
             `;
             // If premium and locked, make it clickable to show the popup
             astuceElement.addEventListener('click', (event) => {
-                if (!premiumKeyValidated) {
+                // MODIFICATION: Condition de verrouillage basée sur validatedPremiumKey
+                if (!validatedPremiumKey) {
                     showTelegramPopup();
                 }
             });
@@ -274,8 +344,9 @@ async function validatePremiumKey(jeu) {
         const validKeys = await response.json();
 
         if (validKeys.includes(userKey)) {
-            premiumKeyValidated = true;
-            localStorage.setItem('premiumKeyValidated', 'true');
+            // MODIFICATION: Stocker la clé elle-même
+            validatedPremiumKey = userKey;
+            localStorage.setItem('validatedPremiumKey', userKey); // Stocke la clé
             messageDiv.className = 'premium-message success';
             messageDiv.textContent = 'Clé Premium validée ! Rechargement des astuces...';
             
@@ -326,4 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
             firstButton.click();
         }
     }
+    // Démarrer la vérification de la clé toutes les 1.5 secondes (1500 ms)
+    setInterval(checkStoredPremiumKey, 1500); 
 });
